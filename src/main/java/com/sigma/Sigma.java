@@ -10,7 +10,7 @@ import java.sql.SQLException;
 
 public class Sigma {
 
-   public static void main(String[] args) {
+    public static void main(String[] args) {
         try (Connection conn = Conexion.getConnection()) {
             if (conn != null && !conn.isClosed()) {
                 System.out.println("Conexion exitosa a MySQL en Docker!");
