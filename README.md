@@ -1,168 +1,141 @@
-# 🛠️ Sigma - Sistema de Gestión de Taller Mecánico
+# Sigma - Sistema de Gestión de Taller Mecánico
 
-Proyecto universitario de gestión integral para taller mecánico desarrollado en **Java Swing**, utilizando una **arquitectura de 3 capas** (Presentación, Negocio y Datos) y persisitiendo la información en **MySQL 8.0** mediante JDBC puro.
+Sistema de gestión integral para taller mecánico desarrollado en Java Swing con arquitectura de tres capas y persistencia en MySQL 8.0 a través de JDBC.
 
----
+## Tecnologías Utilizadas
 
-## 📐 Stack Tecnológico
-
-* **Lenguaje:** Java (JDK 17+)
-* **Gestor de Construcción:** Maven
-* **Interfaz Gráfica:** Java Swing
-* **Base de Datos:** MySQL 8.0
-* **Conector JDBC:** `mysql-connector-j` (v9.1.0)
-* **Contenerización:** Docker / Docker Compose
+* **Lenguaje:** Java 
+* **Gestión de dependencias:** Apache Maven
+* **Interfaz gráfica:** Java Swing
+* **Base de datos:** MySQL
+* **Conector JDBC:** `mysql-connector-j` 
+* **Contenedores:** Docker / Docker Compose
 
 ---
 
-## 📂 Arquitectura del Proyecto (3 Capas)
+## Arquitectura del Sistema
 
-El sistema implementa una separación estricta de responsabilidades en tres capas para garantizar mantenibilidad, escalabilidad y legibilidad de código:
+El proyecto está estructurado en tres capas independientes para separar responsabilidades y facilitar la mantenibilidad del código:
 
 ```text
 com.sigma/
 ├── config/                  # Configuración global de la aplicación (AppConfig)
 ├── datos/
-│   ├── conexion/            # Gestión del ciclo de vida de la conexión JDBC (Conexion)
-│   └── dao/                 # Patrón DAO: Implementación de la persistencia SQL (ClienteDAO, etc.)
+│   ├── conexion/            # Gestión del ciclo de vida de la conexión JDBC
+│   └── dao/                 # Patrón DAO e implementación SQL (ClienteDAO, etc.)
 ├── negocio/
-│   ├── modelo/              # Entidades del dominio (Cliente, Vehiculo, Servicio, Usuario, etc.)
-│   └── servicios/           # Capa de Servicio: Reglas de negocio y validaciones (ClienteServicio, etc.)
+│   ├── modelo/              # Entidades del dominio (Cliente, Vehiculo, Servicio, Usuario)
+│   └── servicios/           # Reglas de negocio y validaciones (ClienteServicio, etc.)
 └── presentacion/
-    ├── clientes/            # Vistas y paneles Swing para clientes (ClientePanel)
-    ├── vehiculos/           # Vistas y paneles Swing para vehículos (VehiculoPanel)
-    ├── servicios/           # Vistas y paneles Swing para órdenes de trabajo (ServicioPanel)
-    └── componentes/         # Componentes visuales reutilizables (TablaPanel, etc.)
+    ├── clientes/            # Formularios y paneles de clientes
+    ├── vehiculos/           # Formularios y paneles de vehículos
+    ├── servicios/           # Gestión de órdenes de trabajo
+    └── componentes/         # Componentes UI reutilizables
 ```
 
-### Reglas de la Arquitectura:
-1. **Presentación (UI):** Solamente responde a eventos de usuario y renderiza componentes Swing. **Prohibido** ejecutar sentencias SQL o validaciones de negocio complejas aquí.
-2. **Negocio (Services & Model):** Modela la información del sistema y aplica reglas de negocio (validar patentes, comprobar estados, verificar campos obligatorios). Comunica la UI con la capa de datos.
-3. **Datos (DAO & Conexión):** Ejecuta las operaciones CRUD directamente sobre MySQL. Utiliza obligatoriamente `PreparedStatement` con comodines `?` para prevenir vulnerabilidades de **Inyección SQL**.
+### Principios de Diseño
+
+* **Capa de Presentación (UI):** Renderizado de componentes Swing y captura de eventos de usuario. No ejecuta sentencias SQL ni reglas de negocio.
+* **Capa de Negocio (Servicios y Modelo):** Validación de datos, aplicación de lógica de negocio y mediación entre la UI y la capa de acceso a datos.
+* **Capa de Datos (DAO y Conexión):** Operaciones CRUD sobre la base de datos MySQL. Se utiliza `PreparedStatement` para parametrizar las consultas y prevenir inyección SQL.
 
 ---
 
-## 🗄️ Base de Datos y Tablas Catálogo (Maestros)
+## Base de Datos
 
-La base de datos `sigma_db` está diseñada bajo principios de normalización y alta escalabilidad.
+El diseño de la base de datos `sigma_db` implementa tablas de catálogo para desacoplar el código de los valores estáticos.
 
-### Tablas Maestras / Catálogo (`tipo_vehiculo` y `roles`)
-En lugar de hardcodear tipos de vehículos o roles en código Java o en columnas SQL estáticas, utilizamos tablas maestro de catálogo:
+### Tablas de Catálogo (`tipo_vehiculo` y `roles`)
 
-* **`tipo_vehiculo`**: Registra los tipos de vehículos (`Auto`, `Camioneta`, `Utilitario`, `Moto`).
-* **`roles`**: Registra los roles de acceso del sistema (`ADMINISTRADOR`, `MECANICO`, `RECEPCIONISTA`).
+Los tipos de vehículos y los roles de usuario se gestionan dinámicamente mediante tablas independientes:
 
-> 💡 **Nota sobre Escalabilidad:** Si el día de mañana el taller empieza a atender *Cuatriciclos* o *Tractores*, **no se modifica la estructura de la base de datos ni el código Java**. Simplemente se agrega un nuevo registro a la tabla `tipo_vehiculo` mediante un `INSERT`. La tabla crece en filas, manteniendo el sistema 100% extensible.
+* `tipo_vehiculo`: Define las categorías atendidas (ej. Auto, Camioneta, Utilitario, Moto).
+* `roles`: Define los niveles de acceso del sistema (ej. ADMINISTRADOR, MECANICO, RECEPCIONISTA).
+
+Este diseño permite agregar nuevos tipos o roles mediante inserciones en la base de datos sin modificar el código fuente de la aplicación.
 
 ---
 
-## 🚀 Guía de Instalación y Ejecución Local
+## Configuración del Entorno de Desarrollo
 
-### Método 1: Con Docker Desktop (OPCIÓN RECOMENDADA)
+### Opción 1: Despliegue con Docker (Recomendado)
 
-Es el método estándar del proyecto. Permite tener exactamente la misma base de datos sin configurar nada manualmente.
+El proyecto incluye una configuración de Docker Compose para desplegar el servidor MySQL con las tablas e inicialización previa.
 
-1. **Asegurarse de tener Docker Desktop iniciado.**
-2. Abre la terminal o consola PowerShell en la raíz del proyecto (`C:\...\sigma`).
-3. Ejecuta el comando:
+1. Iniciar Docker Desktop.
+2. Desde la raíz del proyecto, ejecutar:
    ```bash
    docker compose up -d
    ```
-4. Docker descargará la imagen de MySQL, creará el contenedor `mysql-sigma`, la base de datos `sigma_db` e importará automáticamente todas las tablas del archivo `./db/init.sql`.
+   El contenedor creará la base de datos `sigma_db` e importará automáticamente el esquema inicial desde `./db/init.sql`.
 
-#### Credenciales de Conexión (Docker):
+#### Datos de Conexión
+
 * **Host:** `localhost`
-* **Puerto:** `3307` *(Mapeado para evitar conflictos si tienes otro MySQL nativo)*
-* **Database:** `sigma_db`
-* **Superusuario (Root):** `root` | **Password:** `root`
-* **Usuario App:** `user` | **Password:** `user`
+* **Puerto:** `3307`
+* **Base de Datos:** `sigma_db`
+* **Usuario Administrador:** `root` / **Contraseña:** `root`
+* **Usuario Aplicación:** `user` / **Contraseña:** `user`
 
 ---
 
-### Método 2: Instalación Manual sin Docker (MySQL Local / XAMPP)
+### Opción 2: Instalación Manual (MySQL Local)
 
-Si no dispones de Docker en tu máquina secundaria:
-
-1. Inicia tu servidor local de MySQL (Workbench, phpMyAdmin o XAMPP).
-2. Crea una nueva base de datos llamada `sigma_db`:
+1. Crear la base de datos en su instancia local de MySQL:
    ```sql
    CREATE DATABASE sigma_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
-3. Abre el archivo `./db/init.sql` ubicado en el proyecto e impórtalo/ejecútalo en tu cliente MySQL sobre `sigma_db`.
-4. **Importante:** Si tu MySQL corre en el puerto por defecto `3306` o usa otra contraseña, debes actualizar la cadena de conexión en la clase `com.sigma.datos.conexion.Conexion.java`:
+2. Ejecutar el script `./db/init.sql` sobre la base de datos creada.
+3. Si la instancia utiliza un puerto distinto a `3307` o credenciales diferentes, ajustar la cadena de conexión en `com.sigma.datos.conexion.Conexion`:
    ```java
    private static final String URL = "jdbc:mysql://localhost:3306/sigma_db?...";
    ```
 
 ---
 
-### Ejecución del Proyecto desde NetBeans
+## Compilación y Ejecución (NetBeans)
 
-1. Abre NetBeans y ve a **File -> Open Project...**
-2. Selecciona la carpeta raíz `sigma` (NetBeans la reconocerá como un proyecto Maven).
-3. Haz clic derecho sobre el proyecto `sigma` -> **Clean and Build**.
-4. Haz clic derecho sobre la clase `Sigma.java` (`com.sigma`) y selecciona **Run File** (o presiona `F6`).
-5. En la consola de NetBeans debe aparecer: `¡Conexión exitosa a MySQL en Docker!`.
+1. Seleccionar **File > Open Project...** y abrir la carpeta raíz del proyecto.
+2. Hacer clic derecho sobre el proyecto y ejecutar **Clean and Build**.
+3. Ejecutar la clase principal `com.sigma.Sigma` (o presionar `F6`).
 
 ---
 
-## 🌿 Flujo de Trabajo con Git y GitHub (REGLAS OBLIGATORIAS)
+## Flujo de Trabajo en Git
 
-Para trabajar organizados sin pisar el código de los demás integrantes, nos manejamos mediante **Ramas (Branches)** y **Pull Requests (PR)**.
+### Estrategia de Ramas
 
-### ⚠️ REGLA DE ORO: Prohibido hacer `git push` directo sobre `main`
+La rama `main` contiene únicamente código estable e integrado. Los desarrollos deben realizarse en ramas independientes según la funcionalidad asignada.
 
-La rama `main` es el código de producción del grupo. Nadie hace cambios directamente sobre ella.
+#### Proceso de Integración
 
----
-
-### Paso a Paso para Desarrollar un Módulo:
-
-#### 1. Actualizar tu entorno local
-Antes de empezar a trabajar en un nuevo módulo, colócate en `main` y descarga la última versión aprobada:
-```bash
-git checkout main
-git pull origin main
-```
-
-#### 2. Crear una nueva rama según tu módulo asignado
-Crea y cámbiate a una rama descriptiva de la tarea:
-* **Integrante 2 (Clientes y Vehículos):** `git checkout -b feature/clientes-vehiculos`
-* **Integrante 3 (Servicios del Taller):** `git checkout -b feature/servicios`
-* **Integrante 4 (Usuarios y Roles):** `git checkout -b feature/usuarios-roles`
-* **Integrante 5 (Componentes Swing y Reportes):** `git checkout -b feature/interfaz-reportes`
-
-#### 3. Confirmar cambios con Commits descriptivos
-Haz commits frecuentes y con mensajes claros:
-```bash
-git add .
-git commit -m "Feat: Implementado alta de clientes en ClienteDAO y validación en ClienteServicio"
-```
-
-#### 4. Subir tu rama a GitHub
-Sube únicamente tu rama de trabajo:
-```bash
-git push -u origin feature/clientes-vehiculos
-```
-
-#### 5. Crear un Pull Request (PR)
-1. Ve a la página del repositorio en GitHub.
-2. Haz clic en la opción **Compare & pull request**.
-3. Escribe un título descriptivo y explica brevemente los cambios que agregaste.
-4. El coordinador de arquitectura (Integrante 1) o un compañero revisará el código y realizará el **Merge** a `main`.
-
----
-
-## 🧼 Buenas Prácticas de Código
-
-1. **Gestión de Conexiones:** Siempre utiliza bloques *try-with-resources* en las clases DAO para garantizar que las conexiones, `PreparedStatement` y `ResultSet` se cierren de forma automática sin saturar MySQL:
-   ```java
-   try (Connection conn = Conexion.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(sql)) {
-       // Operaciones SQL...
-   } catch (SQLException e) {
-       System.err.println("Error: " + e.getMessage());
-   }
+1. **Sincronizar la rama principal:**
+   ```bash
+   git checkout main
+   git pull origin main
    ```
-2. **Nomenclatura de BD:** Los nombres de tablas y columnas utilizan siempre minúsculas con guiones bajos (`id_cliente`, `fecha_creacion`), evitando tildes o caracteres especiales (`ñ`).
-3. **Manejo de Excepciones:** No dejes bloques `catch` vacíos. Muestra un mensaje comprensible con `System.err.println()` o lánzalo a la capa de negocio para notificar al usuario.
+
+2. **Crear una rama de trabajo:**
+   ```bash
+   git checkout -b feature/nombre-funcionalidad
+   ```
+
+3. **Registrar los cambios:**
+   ```bash
+   git add .
+   git commit -m "feat: descripción concisa del cambio"
+   ```
+
+4. **Publicar la rama y solicitar revisión:**
+   ```bash
+   git push -u origin feature/nombre-funcionalidad
+   ```
+   Crear un Pull Request en GitHub hacia la rama `main` para su revisión e integración.
+
+---
+
+## Convenciones de Código
+
+* **Gestión de Recursos:** Uso obligatorio de *try-with-resources* en las clases DAO para garantizar el cierre automático de `Connection`, `PreparedStatement` y `ResultSet`.
+* **Nomenclatura en Base de Datos:** Nombres de tablas y columnas en minúsculas utilizando snake_case (`id_cliente`, `fecha_creacion`).
+* **Manejo de Excepciones:** Registrar o propagar los errores de SQL hacia la capa de negocio evitando bloques `catch` vacíos.
