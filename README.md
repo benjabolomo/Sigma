@@ -1,6 +1,6 @@
 # Sigma - Sistema de Gestión de Taller Mecánico
 
-Sistema de gestión integral para taller mecánico desarrollado en Java Swing con arquitectura de tres capas y persistencia en MySQL 8.0 a través de JDBC.
+Sistema de gestión integral para taller mecánico desarrollado en Java Swing con arquitectura de tres capas y persistencia en MySQL a través de JDBC.
 
 ## Tecnologías Utilizadas
 
