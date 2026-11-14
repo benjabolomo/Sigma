@@ -1,26 +1,18 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.sigma.negocio.modelo;
 
-/**
- *
- * @author megaj
- */
-public class Roles {
-    private final int idr;
-    private final string rol;
-    
-    public Rol(int idr, string rol){
-    this.idr = idr;
-    this.rol = rol;
-}
-    public int getid(){
-        return id;
-    }
-    public string getrol(){
-        return rol;
-    }
-}
+public enum Roles {
+    ADMINISTRADOR,
+    MECANICO,
+    RECEPCIONISTA;
 
+    public boolean tienePermiso(Permiso permiso) {
+        if (permiso == null) {
+            return false;
+        }
+        return switch (permiso) {
+            case CONSULTAR_CLIENTES, CONSULTAR_VEHICULOS, GESTIONAR_SERVICIOS -> true;
+            case GESTIONAR_CLIENTES, GESTIONAR_VEHICULOS -> this != MECANICO;
+            case GESTIONAR_USUARIOS -> this == ADMINISTRADOR;
+        };
+    }
+}

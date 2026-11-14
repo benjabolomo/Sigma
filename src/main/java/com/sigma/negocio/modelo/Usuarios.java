@@ -1,33 +1,43 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.sigma.negocio.modelo;
 
-/**
- *
- * @author megaj
- */
-public class Usuarios {
-    private final long idu;
-    private final string nombre;
-    private final string contacto;
-    private final string username;
-    private final string email;
-    private final string pass_hash;
-    private final rol rol;
-   
-    
-    public usuario (long id, string nombre, string contacto,  string username, string email, string pass_hash, rol rol) {
-        this.id = id;
+public final class Usuarios {
+    private final long idUsuario;
+    private final String nombre;
+    private final String contacto;
+    private final String username;
+    private final Roles rol;
+    private final boolean activo;
+
+    public Usuarios(long idUsuario, String nombre, String contacto, String username, Roles rol, boolean activo) {
+        this.idUsuario = idUsuario;
         this.nombre = nombre;
         this.contacto = contacto;
         this.username = username;
-        this.email = email;
-        this.pass_hash = pass_hash;
+        this.rol = rol;
+        this.activo = activo;
     }
-    
-   public string getUN(){
-     return username;   
+
+    public long getIdUsuario() {
+        return idUsuario;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getContacto() {
+        return contacto;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public Roles getRol() {
+        return rol;
+    }
+
+    public boolean isActivo() {
+        return activo;
     }
 }

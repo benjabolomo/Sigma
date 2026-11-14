@@ -52,7 +52,7 @@ Los tipos de vehículos y los roles de usuario se gestionan dinámicamente media
 * `tipo_vehiculo`: Define las categorías atendidas (ej. Auto, Camioneta, Utilitario, Moto).
 * `roles`: Define los niveles de acceso del sistema (ej. ADMINISTRADOR, MECANICO, RECEPCIONISTA).
 
-Este diseño permite agregar nuevos tipos o roles mediante inserciones en la base de datos sin modificar el código fuente de la aplicación.
+Los tipos de vehículos pueden ampliarse en la base de datos. Los roles son un catálogo fijo que debe coincidir con el enum `Roles`; sus permisos se definen en código.
 
 ---
 
@@ -92,6 +92,99 @@ El proyecto incluye una configuración de Docker Compose para desplegar el servi
    ```
 
 ---
+
+## Administración local de usuarios
+
+Si ya existe una base de Sigma, aplicar una sola vez `db/migrations/001_usuario_activo.sql` sobre `sigma_db`. Las instalaciones nuevas ya incluyen la columna `activo` en el esquema inicial.
+
+Desde una terminal de Windows, compilar y copiar las dependencias de ejecución con Maven.
+
+```powershell
+mvn compile dependency:copy-dependencies
+java -cp "target/classes;target/dependency/*" com.sigma.negocio.servicios.AdminConsola crear-admin
+java -cp "target/classes;target/dependency/*" com.sigma.negocio.servicios.AdminConsola restablecer-admin ana
+```
+
+En el último comando, reemplazar `ana` por el nombre de usuario del administrador activo. La terminal pide la contraseña dos veces con entrada oculta. Los comandos usan la conexión MySQL de `Conexion` y requieren acceso a esa instalación.
+
+## Roles y permisos: contrato de integración
+
+La autorización está disponible en negocio; todavía no está conectada a las pantallas ni a los CRUD de clientes, vehículos y servicios. No se agregan tablas de permisos ni migraciones nuevas para esta funcionalidad.
+
+| Permiso | Administrador | Recepcionista | Mecánico |
+|---|---|---|---|
+| `CONSULTAR_CLIENTES` | Sí | Sí | Sí |
+| `GESTIONAR_CLIENTES` | Sí | Sí | No |
+| `CONSULTAR_VEHICULOS` | Sí | Sí | Sí |
+| `GESTIONAR_VEHICULOS` | Sí | Sí | No |
+| `GESTIONAR_SERVICIOS` | Sí | Sí | Sí |
+| `GESTIONAR_USUARIOS` | Sí | No | No |
+
+Gestionar clientes o vehículos autoriza alta, edición y borrado; consultar autoriza lectura. Gestionar servicios incluye consulta, alta, edición y borrado. Gestionar usuarios permite listar, crear y desactivar mediante `UsuarioServicio`; no incluye edición de roles. La matriz se centraliza en `Roles.tienePermiso`, pero para autorizar una sesión se debe usar `UsuarioServicio`, que consulta el rol y estado activo actuales en la base.
+
+### Presentación y negocio
+
+La sesión se obtiene exclusivamente de `iniciarSesion`. Para habilitar acciones en Swing (hacer las consultas JDBC fuera del hilo de eventos):
+
+```java
+boolean puedeEditar = usuarios.tienePermiso(sesion, Permiso.GESTIONAR_VEHICULOS);
+// Aplicar el resultado a los controles en el hilo de eventos de Swing.
+```
+
+Cada operación de negocio debe verificar nuevamente el permiso antes de acceder a su DAO, aunque el botón esté oculto o deshabilitado:
+
+```java
+usuarios.verificarPermiso(sesion, Permiso.CONSULTAR_VEHICULOS);
+// Consultar los vehículos existentes desde el DAO.
+
+usuarios.verificarPermiso(sesion, Permiso.GESTIONAR_VEHICULOS);
+// Validar y guardar una modificación del vehículo o de su propietario.
+```
+
+Ambos métodos declaran `throws UsuarioException`. `tienePermiso` devuelve `false` si faltan sesión o permiso, o si el usuario no existe, está inactivo o no tiene autorización. `verificarPermiso` rechaza esos casos con `SIN_PERMISO`. Un fallo de base produce `ERROR_PERSISTENCIA`; no debe interpretarse como autorización. El perfil de `sesion.getUsuario()` corresponde al inicio de sesión y no sirve como comprobación vigente de permisos.
+
+### Carga de servicios por el mecánico
+
+El selector de vehículos requiere `CONSULTAR_VEHICULOS` y la consulta de su cliente requiere `CONSULTAR_CLIENTES`. Estos permisos no habilitan edición ni pantallas de mantenimiento para el mecánico. Al guardar se exige `GESTIONAR_SERVICIOS`, se valida que el vehículo exista y se persiste su patente en `servicio.patente_vehiculo`. El cliente se obtiene de `vehiculo.id_cliente`; no se acepta un propietario alternativo ni se actualizan cliente o vehículo como efecto de guardar el servicio.
+
+Cambiar el propietario es una operación independiente de gestión de vehículos y requiere `GESTIONAR_VEHICULOS`. Los servicios de negocio deben llamar a la autorización; presentación no debe acceder directamente a los DAO. La consulta de permisos no mantiene un bloqueo hasta la futura escritura de otro servicio: una operación ya autorizada puede terminar si la cuenta se desactiva simultáneamente; las comprobaciones posteriores se deniegan.
+
+Aceptación pendiente de la integración: un mecánico selecciona un vehículo ya cargado, consulta su cliente y registra un servicio. Un intento de reasignar el propietario se rechaza y `vehiculo.id_cliente` permanece intacto.
+
+### Administrador único y baja lógica
+
+`crear-admin` crea el primer administrador. Tanto esa ruta como `crearUsuario` rechazan un segundo administrador con `ADMIN_YA_EXISTE`, incluso si el existente está inactivo. Un bloqueo transaccional del rol serializa las altas. `desactivarUsuario` nunca permite desactivar una cuenta administradora; para los demás usuarios mantiene `activo = FALSE`, preserva los servicios asociados y es idempotente. Se conserva la recuperación de contraseña mediante la consola.
+
+La protección cubre las operaciones de negocio, no escrituras directas en MySQL ni llamadas directas al DAO. Antes de integrar sobre una base existente, ejecutar:
+
+```sql
+SELECT COUNT(*) AS administradores
+FROM usuario u JOIN roles r ON r.id_rol = u.id_rol
+WHERE r.nombre_rol = 'ADMINISTRADOR';
+
+SELECT u.id_usuario, u.username, u.activo
+FROM usuario u JOIN roles r ON r.id_rol = u.id_rol
+WHERE r.nombre_rol = 'ADMINISTRADOR';
+```
+
+Si hay más de uno, resolver las cuentas heredadas manualmente antes de habilitar la funcionalidad. No se elimina, desactiva ni elige automáticamente ninguna cuenta. Si el único administrador está inactivo por una modificación externa, requiere reparación manual; no se permite crear otro.
+
+### Autopruebas
+
+Las pruebas son programas con `main`, sin dependencias adicionales; `mvn test` no las ejecuta automáticamente. Con JDK 25 y Maven:
+
+```powershell
+mvn test-compile dependency:copy-dependencies
+java -cp "target/test-classes;target/classes;target/dependency/*" com.sigma.negocio.servicios.PermisosPrueba
+```
+
+Para integración, crear una base MySQL **exclusiva de pruebas y vacía**, cargar `db/init.sql` y proporcionar su contraseña mediante `SIGMA_TEST_DB_PASSWORD`. No usar `sigma_db`: la prueba crea y modifica registros, incluyendo bajas y un borrado de prueba; deja datos al finalizar. Usar una base nueva para cada ejecución.
+
+```powershell
+java -cp "target/test-classes;target/classes;target/dependency/*" com.sigma.negocio.servicios.UsuarioServicioIntegracion "jdbc:mysql://localhost:3307/sigma_roles_test" user
+```
+
+La integración verifica altas iniciales concurrentes, administrador único e imborrable desde negocio, credenciales, matriz por sesión, cambios externos de rol, sesiones inexistentes o inactivas, errores de conexión y conservación del historial tras la baja lógica.
 
 ## Compilación y Ejecución (NetBeans)
 

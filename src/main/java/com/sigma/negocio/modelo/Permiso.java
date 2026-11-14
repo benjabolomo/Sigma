@@ -1,0 +1,10 @@
+package com.sigma.negocio.modelo;
+
+public enum Permiso {
+    CONSULTAR_CLIENTES,
+    GESTIONAR_CLIENTES,
+    CONSULTAR_VEHICULOS,
+    GESTIONAR_VEHICULOS,
+    GESTIONAR_SERVICIOS,
+    GESTIONAR_USUARIOS
+}
