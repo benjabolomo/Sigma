@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS usuario (
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     id_rol INT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
 );
 
