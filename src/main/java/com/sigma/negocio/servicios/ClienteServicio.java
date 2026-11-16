@@ -4,37 +4,35 @@
  */
 package com.sigma.negocio.servicios;
 
-/*clase de ejemplo para poder manter estructura en el git.
-Ejemplo: Aplicacion de validaciones de reglas de negocio antes de subir a db
-*/
-
 import com.sigma.datos.dao.ClienteDAO;
 import com.sigma.negocio.modelo.Cliente;
 import java.util.List;
 
 public class ClienteServicio {
-    private final ClienteDAO clienteDAO;
+    private ClienteDAO clienteDAO = new ClienteDAO();
 
-    public ClienteServicio() {
-        this.clienteDAO = new ClienteDAO();
-    }
-
-    /**
-     * Valida y registra un nuevo cliente.
-     */
-    public boolean registrarCliente(String nombre, String contacto) throws IllegalArgumentException {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre del cliente no puede estar vacío.");
+    public boolean registrarCliente(Cliente cliente) throws Exception {
+        // Validar que no exista un cliente activo con el mismo DNI
+        Cliente existente = clienteDAO.buscarPorDni(cliente.getDni());
+        if (existente != null) {
+            throw new Exception("Ya existe un cliente registrado con el DNI: " + cliente.getDni());
         }
-
-        Cliente cliente = new Cliente(nombre.trim(), contacto != null ? contacto.trim() : null);
         return clienteDAO.insertar(cliente);
     }
 
-    /**
-     * Devuelve todos los clientes registrados.
-     */
+    public List<Cliente> listarClientes() {
+        return clienteDAO.listar();
+    }
+
+    public boolean actualizarCliente(Cliente cliente) {
+        return clienteDAO.actualizar(cliente);
+    }
+
+    public boolean bajaLogicaCliente(int id) {
+        return clienteDAO.bajaLogica(id);
+    }
+
     public List<Cliente> obtenerClientes() {
-        return clienteDAO.listarTodos();
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
