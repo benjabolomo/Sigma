@@ -4,66 +4,65 @@
  */
 package com.sigma.negocio.modelo;
 
-//clase de ejemplo para poder manter estructura en el git.
-
-import java.sql.Timestamp;
-
 public class Cliente {
-    private Long idCliente;
+    private int id;
     private String nombre;
-    private String contacto;
-    private Timestamp fechaCreacion;
+    private String apellido;
+    private String dni;
+    private String telefono;
+    private String email;
+    private boolean activo;
 
+    // Constructor vacío
     public Cliente() {
+        this.activo = true; // Por defecto nace activo
     }
 
-    public Cliente(String nombre, String contacto) {
+    // Constructor con parámetros (útil para consultas)
+    public Cliente(int id, String nombre, String apellido, String dni, String telefono, String email, boolean activo) {
+        this.id = id;
         this.nombre = nombre;
-        this.contacto = contacto;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.telefono = telefono;
+        this.email = email;
+        this.activo = activo;
     }
 
-    public Cliente(Long idCliente, String nombre, String contacto, Timestamp fechaCreacion) {
-        this.idCliente = idCliente;
+    // Constructor sin ID (para inserciones nuevas)
+    public Cliente(String nombre, String apellido, String dni, String telefono, String email) {
         this.nombre = nombre;
-        this.contacto = contacto;
-        this.fechaCreacion = fechaCreacion;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.telefono = telefono;
+        this.email = email;
+        this.activo = true;
     }
 
-    public Long getIdCliente() {
-        return idCliente;
-    }
+    // Getters y Setters
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public void setIdCliente(Long idCliente) {
-        this.idCliente = idCliente;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getNombre() {
-        return nombre;
-    }
+    public String getApellido() { return apellido; }
+    public void setApellido(String apellido) { this.apellido = apellido; }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+    public String getDni() { return dni; }
+    public void setDni(String dni) { this.dni = dni; }
 
-    public String getContacto() {
-        return contacto;
-    }
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String telefono) { this.telefono = telefono; }
 
-    public void setContacto(String contacto) {
-        this.contacto = contacto;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public Timestamp getFechaCreacion() {
-        return fechaCreacion;
-    }
-
-    public void setFechaCreacion(Timestamp fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
+    public boolean isActivo() { return activo; }
+    public void setActivo(boolean activo) { this.activo = activo; }
 
     @Override
     public String toString() {
-        return nombre + " (" + (contacto != null ? contacto : "Sin contacto") + ")";
+        return apellido + ", " + nombre + " (DNI: " + dni + ")";
     }
 }
-
