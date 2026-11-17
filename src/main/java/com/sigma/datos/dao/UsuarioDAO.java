@@ -102,21 +102,27 @@ public final class UsuarioDAO {
         }
     }
 
-    public boolean desactivar(Connection conexion, long idUsuario) throws SQLException {
-        try (PreparedStatement consulta = conexion.prepareStatement(
-                "UPDATE usuario SET activo = FALSE WHERE id_usuario = ? AND activo = TRUE")) {
-            consulta.setLong(1, idUsuario);
-            if (consulta.executeUpdate() == 1) {
-                return true;
-            }
-        }
-        try (PreparedStatement consulta = conexion.prepareStatement("SELECT 1 FROM usuario WHERE id_usuario = ?")) {
-            consulta.setLong(1, idUsuario);
-            try (ResultSet fila = consulta.executeQuery()) {
-                return fila.next();
-            }
+    public boolean cambiarEstado(Connection conexion, long idUsuario, boolean activo)
+        throws SQLException {
+    String sql = "UPDATE usuario SET activo = ? WHERE id_usuario = ? AND activo <> ?";
+    try (PreparedStatement consulta = conexion.prepareStatement(sql)) {
+        consulta.setBoolean(1, activo);
+        consulta.setLong(2, idUsuario);
+        consulta.setBoolean(3, activo);
+
+        if (consulta.executeUpdate() == 1) {
+            return true;
         }
     }
+
+    try (PreparedStatement consulta = conexion.prepareStatement(
+            "SELECT 1 FROM usuario WHERE id_usuario = ?")) {
+        consulta.setLong(1, idUsuario);
+        try (ResultSet fila = consulta.executeQuery()) {
+            return fila.next();
+        }
+    }
+}
 
     public boolean restablecerAdministrador(Connection conexion, String username, int idRol, String clave)
             throws SQLException {
