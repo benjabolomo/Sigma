@@ -162,6 +162,8 @@ public class ServicioPanel extends JPanel {
         btnNuevaOrden.setFont(new Font("SansSerif", Font.BOLD, 12));
         btnNuevaOrden.setBackground(new Color(0, 120, 215));
         btnNuevaOrden.setForeground(Color.WHITE);
+        btnNuevaOrden.setOpaque(true);
+        btnNuevaOrden.setBorderPainted(false);
         btnNuevaOrden.setFocusPainted(false);
         btnNuevaOrden.addActionListener(e -> abrirNuevaOrden());
 
@@ -182,7 +184,7 @@ public class ServicioPanel extends JPanel {
         add(pnlAcciones, BorderLayout.SOUTH);
     }
 
-    private void cargarComboVehiculos() {
+    public void cargarComboVehiculos() {
         cboFiltroVehiculo.removeAllItems();
         cboFiltroVehiculo.addItem(new VehiculoItem(null, "-- Todos los Vehículos --"));
         try {
@@ -353,7 +355,8 @@ public class ServicioPanel extends JPanel {
         }
     }
 
-    public void refrescarVista() {
+   public void refrescarVista() {
+        cargarComboVehiculos();
         VehiculoItem vi = (VehiculoItem) cboFiltroVehiculo.getSelectedItem();
         if (vi != null && vi.getVehiculo() != null) {
             filtrarPorVehiculoSeleccionado();

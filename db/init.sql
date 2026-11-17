@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS cliente (
     id_cliente BIGINT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     contacto VARCHAR(100),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -49,9 +50,24 @@ CREATE TABLE IF NOT EXISTS servicio (
     observacion TEXT,
     estado ENUM('PENDIENTE', 'EN_PROCESO', 'FINALIZADO', 'CANCELADO') DEFAULT 'PENDIENTE',
     patente_vehiculo VARCHAR(15) NOT NULL,
-    id_usuario BIGINT NOT NULL,
+    id_usuario BIGINT NULL,
+    total_mano_obra DECIMAL(12,2) DEFAULT 0.00,
+    total_repuestos DECIMAL(12,2) DEFAULT 0.00,
+    total DECIMAL(12,2) DEFAULT 0.00,
     FOREIGN KEY (patente_vehiculo) REFERENCES vehiculo(patente) ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- Detalles del Servicio (Mano de Obra y Repuestos)
+CREATE TABLE IF NOT EXISTS detalle_servicio (
+    id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_servicio BIGINT NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    cantidad DECIMAL(10,2) NOT NULL,
+    precio_unitario DECIMAL(12,2) NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL,
+    FOREIGN KEY (id_servicio) REFERENCES servicio(id_servicio) ON DELETE CASCADE
 );
 
 -- Datos iniciales obligatorios

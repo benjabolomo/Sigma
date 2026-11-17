@@ -74,6 +74,13 @@ public class VehiculoPanel extends JPanel {
             cmbTipos.addItem(t);
         }
     }
+    
+    public void refrescarCombos() {
+        cmbClientes.removeAllItems();
+        cargarClientes();
+        cmbTipos.removeAllItems();
+        cargarTipos();
+    }
 
     private void registrarVehiculo() {
         try {

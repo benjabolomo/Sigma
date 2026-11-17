@@ -52,6 +52,8 @@ public final class Estilos {
         boton.setFont(new Font("SansSerif", Font.BOLD, 12));
         boton.setBackground(PRIMARIO);
         boton.setForeground(Color.WHITE);
+        boton.setOpaque(true);
+        boton.setBorderPainted(false);
         boton.setFocusPainted(false);
         return boton;
     }

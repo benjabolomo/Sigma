@@ -11,15 +11,19 @@ import java.util.List;
 public class VehiculoDAO {
 
     public boolean insertar(Vehiculo v) {
-        String sql = "INSERT INTO vehiculos (patente, marca, modelo, anio, cliente_id, tipo_vehiculo_id) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO vehiculo (patente, modelo, anio, kilometraje, id_cliente, id_tipo) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = Conexion.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, v.getPatente());
-            pstmt.setString(2, v.getMarca());
-            pstmt.setString(3, v.getModelo());
-            pstmt.setInt(4, v.getAnio());
+
+            String marcaYModelo = ((v.getMarca() != null ? v.getMarca() : "") + " " + (v.getModelo() != null ? v.getModelo() : "")).trim();
+
+            pstmt.setString(1, v.getPatente().trim().toUpperCase());
+            pstmt.setString(2, marcaYModelo);
+            pstmt.setInt(3, v.getAnio());
+            pstmt.setInt(4, v.getKilometraje());
             pstmt.setInt(5, v.getClienteId());
             pstmt.setInt(6, v.getTipoVehiculoId());
+
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -29,7 +33,11 @@ public class VehiculoDAO {
     }
 
     public Vehiculo buscarPorPatente(String patente) {
-        String sql = "SELECT * FROM vehiculos WHERE patente = ?";
+        String sql = "SELECT v.*, c.nombre AS nombre_cliente, tv.descripcion AS tipo_descripcion " +
+                     "FROM vehiculo v " +
+                     "LEFT JOIN cliente c ON v.id_cliente = c.id_cliente " +
+                     "LEFT JOIN tipo_vehiculo tv ON v.id_tipo = tv.id_tipo " +
+                     "WHERE UPPER(TRIM(v.patente)) = UPPER(TRIM(?))";
         try (Connection conn = Conexion.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, patente);
@@ -46,7 +54,11 @@ public class VehiculoDAO {
 
     public List<Vehiculo> listarTodos() {
         List<Vehiculo> lista = new ArrayList<>();
-        String sql = "SELECT * FROM vehiculos";
+        String sql = "SELECT v.*, c.nombre AS nombre_cliente, tv.descripcion AS tipo_descripcion " +
+                     "FROM vehiculo v " +
+                     "LEFT JOIN cliente c ON v.id_cliente = c.id_cliente " +
+                     "LEFT JOIN tipo_vehiculo tv ON v.id_tipo = tv.id_tipo " +
+                     "ORDER BY v.patente";
         try (Connection conn = Conexion.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -61,7 +73,11 @@ public class VehiculoDAO {
 
     public List<Vehiculo> listarPorCliente(int clienteId) {
         List<Vehiculo> lista = new ArrayList<>();
-        String sql = "SELECT * FROM vehiculos WHERE cliente_id = ?";
+        String sql = "SELECT v.*, c.nombre AS nombre_cliente, tv.descripcion AS tipo_descripcion " +
+                     "FROM vehiculo v " +
+                     "LEFT JOIN cliente c ON v.id_cliente = c.id_cliente " +
+                     "LEFT JOIN tipo_vehiculo tv ON v.id_tipo = tv.id_tipo " +
+                     "WHERE v.id_cliente = ?";
         try (Connection conn = Conexion.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, clienteId);
@@ -78,12 +94,12 @@ public class VehiculoDAO {
 
     public List<TipoVehiculo> listarTiposVehiculo() {
         List<TipoVehiculo> tipos = new ArrayList<>();
-        String sql = "SELECT * FROM tipos_vehiculo";
+        String sql = "SELECT id_tipo, descripcion FROM tipo_vehiculo ORDER BY id_tipo";
         try (Connection conn = Conexion.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                tipos.add(new TipoVehiculo(rs.getInt("id"), rs.getString("descripcion")));
+                tipos.add(new TipoVehiculo(rs.getInt("id_tipo"), rs.getString("descripcion")));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -93,14 +109,17 @@ public class VehiculoDAO {
 
     private Vehiculo mapearVehiculo(ResultSet rs) throws SQLException {
         Vehiculo v = new Vehiculo(
-            rs.getInt("id"),
+            0,
             rs.getString("patente"),
-            rs.getString("marca"),
+            "",
             rs.getString("modelo"),
             rs.getInt("anio"),
-            rs.getInt("cliente_id"),
-            rs.getInt("tipo_vehiculo_id")
+            rs.getInt("id_cliente"),
+            rs.getInt("id_tipo")
         );
+        v.setKilometraje(rs.getInt("kilometraje"));
+        v.setNombreCliente(rs.getString("nombre_cliente"));
+        v.setTipoDescripcion(rs.getString("tipo_descripcion"));
         return v;
     }
 }

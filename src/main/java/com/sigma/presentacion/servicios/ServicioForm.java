@@ -199,6 +199,8 @@ public class ServicioForm extends JDialog {
         btnGuardar.setFont(new Font("SansSerif", Font.BOLD, 13));
         btnGuardar.setBackground(new Color(0, 120, 215));
         btnGuardar.setForeground(Color.WHITE);
+        btnGuardar.setOpaque(true);
+        btnGuardar.setBorderPainted(false);
         btnGuardar.setFocusPainted(false);
         btnGuardar.addActionListener(e -> guardarOrden());
 
