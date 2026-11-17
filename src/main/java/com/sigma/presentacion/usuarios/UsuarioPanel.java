@@ -60,7 +60,7 @@ public class UsuarioPanel extends JPanel {
         gbc.gridx = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Rol (*):"), gbc);
         gbc.gridx = 3; gbc.weightx = 1; pnlForm.add(cboRol, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Contraseña (mín. 15) (*):"), gbc);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; pnlForm.add(new JLabel("Contraseña (mín. 8) (*):"), gbc);
         gbc.gridx = 1; gbc.weightx = 1; pnlForm.add(txtClave, gbc);
 
         JButton btnCrear = Estilos.botonPrimario("Crear Usuario");
