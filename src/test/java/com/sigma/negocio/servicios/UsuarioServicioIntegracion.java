@@ -39,7 +39,8 @@ public final class UsuarioServicioIntegracion {
         esperar(ADMIN_YA_EXISTE, () -> servicio.crearUsuario(admin, "Luz", null, "luz", clave, Roles.ADMINISTRADOR));
         exigir(recepcion.getContacto().equals("1234"));
         exigir(servicio.listarUsuarios(admin).size() == 3);
-        exigir(!hash(abrir, "ana").equals(hash(abrir, "leo")));
+        exigir(new String(clave).equals(claveGuardada(abrir, "ana")));
+        exigir(new String(clave).equals(claveGuardada(abrir, "leo")));
         esperar(USERNAME_DUPLICADO, () -> servicio.crearUsuario(admin, "Duplicado", null, "leo", clave, Roles.MECANICO));
         esperar(DATOS_INVALIDOS, () -> servicio.crearUsuario(admin, "", null, "vacío", clave, Roles.MECANICO));
         esperar(DATOS_INVALIDOS, () -> servicio.crearUsuario(admin, "Uno", null, "a".repeat(51), clave, Roles.MECANICO));
@@ -81,9 +82,9 @@ public final class UsuarioServicioIntegracion {
             sql.executeUpdate("INSERT INTO vehiculo (patente, modelo, id_cliente, id_tipo) VALUES ('TEST01', 'Auto', 1, 1)");
             sql.executeUpdate("INSERT INTO servicio (patente_vehiculo, id_usuario) VALUES ('TEST01', " + mecanico.getIdUsuario() + ")");
         }
-        String hashMecanico = hash(abrir, "leo");
+        String claveMecanico = claveGuardada(abrir, "leo");
         esperar(USUARIO_NO_ENCONTRADO, () -> servicio.restablecerAdministrador("leo", nueva));
-        exigir(hashMecanico.equals(hash(abrir, "leo")));
+        exigir(claveMecanico.equals(claveGuardada(abrir, "leo")));
         servicio.desactivarUsuario(admin, mecanico.getIdUsuario());
         servicio.desactivarUsuario(admin, mecanico.getIdUsuario());
         for (Permiso permiso : Permiso.values()) {
@@ -99,9 +100,10 @@ public final class UsuarioServicioIntegracion {
             }
         }
 
-        String hashAdmin = hash(abrir, "ana");
+        String claveAdmin = claveGuardada(abrir, "ana");
         servicio.restablecerAdministrador("ana", nueva);
-        exigir(!hashAdmin.equals(hash(abrir, "ana")));
+        exigir(!claveAdmin.equals(claveGuardada(abrir, "ana")));
+        exigir(new String(nueva).equals(claveGuardada(abrir, "ana")));
         esperar(CREDENCIALES_INVALIDAS, () -> servicio.iniciarSesion("ana", clave));
         exigir(servicio.iniciarSesion("ana", nueva).getUsuario().getIdUsuario() == admin.getUsuario().getIdUsuario());
         exigir(servicio.listarUsuarios(admin).size() == 3);
@@ -127,13 +129,13 @@ public final class UsuarioServicioIntegracion {
         exigir(!servicio.tienePermiso(admin, Permiso.GESTIONAR_USUARIOS));
         esperar(SIN_PERMISO, () -> servicio.listarUsuarios(admin));
         esperar(ADMIN_YA_EXISTE, () -> servicio.crearAdministradorInicial("Otra", "otra", clave));
-        String hashInactivo = hash(abrir, "ana");
+        String claveInactivo = claveGuardada(abrir, "ana");
         esperar(USUARIO_NO_ENCONTRADO, () -> servicio.restablecerAdministrador("ana", clave));
-        exigir(hashInactivo.equals(hash(abrir, "ana")));
+        exigir(claveInactivo.equals(claveGuardada(abrir, "ana")));
         System.out.println("Integración de usuarios verificada.");
     }
 
-    private static String hash(UsuarioServicio.ProveedorConexion abrir, String username) throws SQLException {
+    private static String claveGuardada(UsuarioServicio.ProveedorConexion abrir, String username) throws SQLException {
         try (var conexion = abrir.abrir(); var sql = conexion.prepareStatement(
                 "SELECT password_hash FROM usuario WHERE username = ?")) {
             sql.setString(1, username);
