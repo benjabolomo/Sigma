@@ -67,25 +67,58 @@ public final class UsuarioServicio {
     }
 
     public List<Usuarios> listarUsuarios(Sesion sesion) throws UsuarioException {
-        return gestionarCuentas((conexion, idRolAdmin) -> {
+    try (Connection conexion = proveedorConexion.abrir()) {
+        conexion.setAutoCommit(false);
+        try {
+            dao.bloquearRolAdministrador(conexion);
             verificarPermiso(conexion, sesion, Permiso.GESTIONAR_USUARIOS);
-            return dao.listar(conexion);
-        });
+            List<Usuarios> usuarios = dao.listar(conexion);
+            conexion.commit();
+            return usuarios;
+        } catch (SQLException | UsuarioException | RuntimeException e) {
+            try {
+                conexion.rollback();
+            } catch (SQLException falloReversion) {
+                e.addSuppressed(falloReversion);
+            }
+            throw e;
+        }
+    } catch (SQLException e) {
+        throw traducirError(e);
     }
+}
 
     public void desactivarUsuario(Sesion sesion, long idUsuario) throws UsuarioException {
-        gestionarCuentas((conexion, idRolAdmin) -> {
-            verificarPermiso(conexion, sesion, Permiso.GESTIONAR_USUARIOS);
-            Usuarios destino = dao.buscarPorId(conexion, idUsuario);
-            if (destino != null && destino.getRol() == Roles.ADMINISTRADOR) {
-                throw new UsuarioException(SIN_PERMISO, "No se puede desactivar una cuenta administradora.");
-            }
-            if (!dao.desactivar(conexion, idUsuario)) {
-                throw new UsuarioException(USUARIO_NO_ENCONTRADO, "El usuario indicado no existe.");
-            }
-            return null;
-        });
-    }
+    cambiarEstadoUsuario(sesion, idUsuario, false);
+}
+
+public void reactivarUsuario(Sesion sesion, long idUsuario) throws UsuarioException {
+    cambiarEstadoUsuario(sesion, idUsuario, true);
+}
+
+private void cambiarEstadoUsuario(Sesion sesion, long idUsuario, boolean activo)
+        throws UsuarioException {
+    gestionarCuentas((conexion, idRolAdmin) -> {
+        verificarPermiso(conexion, sesion, Permiso.GESTIONAR_USUARIOS);
+
+        Usuarios destino = dao.buscarPorId(conexion, idUsuario);
+        if (destino == null) {
+            throw new UsuarioException(
+                    USUARIO_NO_ENCONTRADO, "El usuario indicado no existe.");
+        }
+
+        if (!activo && destino.getRol() == Roles.ADMINISTRADOR) {
+            throw new UsuarioException(
+                    SIN_PERMISO, "No se puede desactivar una cuenta administradora.");
+        }
+
+        if (!dao.cambiarEstado(conexion, idUsuario, activo)) {
+            throw new UsuarioException(
+                    USUARIO_NO_ENCONTRADO, "El usuario indicado no existe.");
+        }
+        return null;
+    });
+}
 
     void crearAdministradorInicial(String nombre, String username, char[] clave) throws UsuarioException {
         gestionarCuentas((conexion, idRolAdmin) -> {
@@ -150,26 +183,26 @@ public final class UsuarioServicio {
         }
     }
 
-    private <T> T gestionarCuentas(OperacionCuentas<T> operacion) throws UsuarioException {
-        try (Connection conexion = proveedorConexion.abrir()) {
-            conexion.setAutoCommit(false);
+    private Usuarios gestionarCuentas(OperacionCuentas operacion) throws UsuarioException {
+    try (Connection conexion = proveedorConexion.abrir()) {
+        conexion.setAutoCommit(false);
+        try {
+            int idRolAdmin = dao.bloquearRolAdministrador(conexion);
+            Usuarios resultado = operacion.ejecutar(conexion, idRolAdmin);
+            conexion.commit();
+            return resultado;
+        } catch (SQLException | UsuarioException | RuntimeException e) {
             try {
-                int idRolAdmin = dao.bloquearRolAdministrador(conexion);
-                T resultado = operacion.ejecutar(conexion, idRolAdmin);
-                conexion.commit();
-                return resultado;
-            } catch (SQLException | UsuarioException | RuntimeException e) {
-                try {
-                    conexion.rollback();
-                } catch (SQLException falloReversion) {
-                    e.addSuppressed(falloReversion);
-                }
-                throw e;
+                conexion.rollback();
+            } catch (SQLException falloReversion) {
+                e.addSuppressed(falloReversion);
             }
-        } catch (SQLException e) {
-            throw traducirError(e);
+            throw e;
         }
+    } catch (SQLException e) {
+        throw traducirError(e);
     }
+}
 
     private static String validarTexto(String valor, String campo, int maximo) throws UsuarioException {
         String texto = valor == null ? "" : valor.strip();
@@ -203,12 +236,13 @@ public final class UsuarioServicio {
         return new UsuarioException(ERROR_PERSISTENCIA, "No se pudo completar la operación en la base de datos.");
     }
 
-    @FunctionalInterface
-    private interface OperacionCuentas<T> {
-        T ejecutar(Connection conexion, int idRolAdmin) throws SQLException, UsuarioException;
-    }
+    
+    private interface OperacionCuentas {
+    Usuarios ejecutar(Connection conexion, int idRolAdmin)
+            throws SQLException, UsuarioException;
+}
 
-    @FunctionalInterface
+    
     interface ProveedorConexion {
         Connection abrir() throws SQLException;
     }

@@ -75,11 +75,11 @@ public class UsuarioPanel extends JPanel {
         add(tabla, BorderLayout.CENTER);
 
         JPanel pnlAcciones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
-        JButton btnDesactivar = Estilos.botonSecundario("Desactivar Seleccionado");
-        btnDesactivar.addActionListener(e -> desactivarSeleccionado());
+        JButton btnCambiarEstado = Estilos.botonSecundario("Cambiar estado");
+        btnCambiarEstado.addActionListener(e -> cambiarEstadoSeleccionado());
         JButton btnRefrescar = Estilos.botonSecundario("Refrescar");
         btnRefrescar.addActionListener(e -> cargarTabla());
-        pnlAcciones.add(btnDesactivar);
+        pnlAcciones.add(btnCambiarEstado);
         pnlAcciones.add(btnRefrescar);
         add(pnlAcciones, BorderLayout.SOUTH);
     }
@@ -128,23 +128,36 @@ public class UsuarioPanel extends JPanel {
         }
     }
 
-    private void desactivarSeleccionado() {
-        int fila = tabla.getFilaSeleccionada();
-        if (fila < 0) {
-            DialogoConfirmacion.mostrarAviso(this, "Seleccione un usuario de la tabla.");
-            return;
-        }
-        long idUsuario = (Long) tabla.getValor(fila, 0);
-        String username = (String) tabla.getValor(fila, 2);
-        if (!DialogoConfirmacion.confirmar(this, "¿Desactivar al usuario '" + username + "'?")) {
-            return;
-        }
-        try {
+   private void cambiarEstadoSeleccionado() {
+    int fila = tabla.getFilaSeleccionada();
+    if (fila < 0) {
+        DialogoConfirmacion.mostrarAviso(this, "Seleccione un usuario de la tabla.");
+        return;
+    }
+
+    long idUsuario = (Long) tabla.getValor(fila, 0);
+    String username = (String) tabla.getValor(fila, 2);
+    boolean activo = "Activo".equals(tabla.getValor(fila, 5));
+
+    String pregunta = activo
+            ? "¿Desea desactivar el usuario '" + username + "'?"
+            : "¿Desea reactivar el usuario '" + username + "'?";
+
+    if (!DialogoConfirmacion.confirmar(this, pregunta)) {
+        return;
+    }
+
+    try {
+        if (activo) {
             usuarioServicio.desactivarUsuario(sesion, idUsuario);
             DialogoConfirmacion.mostrarExito(this, "Usuario desactivado.");
-            cargarTabla();
-        } catch (UsuarioException ex) {
-            DialogoConfirmacion.mostrarError(this, ex.getMessage());
+        } else {
+            usuarioServicio.reactivarUsuario(sesion, idUsuario);
+            DialogoConfirmacion.mostrarExito(this, "Usuario reactivado.");
         }
+        cargarTabla();
+    } catch (UsuarioException ex) {
+        DialogoConfirmacion.mostrarError(this, ex.getMessage());
     }
+}
 }
