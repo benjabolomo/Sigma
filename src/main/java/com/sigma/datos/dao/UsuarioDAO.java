@@ -20,19 +20,19 @@ public final class UsuarioDAO {
 
     public static final class Credenciales {
         private final Usuarios usuario;
-        private final String hash;
+        private final String clave;
 
-        private Credenciales(Usuarios usuario, String hash) {
+        private Credenciales(Usuarios usuario, String clave) {
             this.usuario = usuario;
-            this.hash = hash;
+            this.clave = clave;
         }
 
         public Usuarios getUsuario() {
             return usuario;
         }
 
-        public String getHash() {
-            return hash;
+        public String getClave() {
+            return clave;
         }
     }
 
@@ -83,14 +83,14 @@ public final class UsuarioDAO {
     }
 
     public Usuarios insertar(Connection conexion, String nombre, String contacto, String username,
-            String hash, Roles rol) throws SQLException {
+            String clave, Roles rol) throws SQLException {
         int idRol = buscarIdRol(conexion, rol, "");
         String sql = "INSERT INTO usuario (nombre, contacto, username, password_hash, id_rol) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement consulta = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             consulta.setString(1, nombre);
             consulta.setString(2, contacto);
             consulta.setString(3, username);
-            consulta.setString(4, hash);
+            consulta.setString(4, clave);
             consulta.setInt(5, idRol);
             consulta.executeUpdate();
             try (ResultSet claves = consulta.getGeneratedKeys()) {
@@ -118,11 +118,11 @@ public final class UsuarioDAO {
         }
     }
 
-    public boolean restablecerAdministrador(Connection conexion, String username, int idRol, String hash)
+    public boolean restablecerAdministrador(Connection conexion, String username, int idRol, String clave)
             throws SQLException {
         String sql = "UPDATE usuario SET password_hash = ? WHERE username = ? AND id_rol = ? AND activo = TRUE";
         try (PreparedStatement consulta = conexion.prepareStatement(sql)) {
-            consulta.setString(1, hash);
+            consulta.setString(1, clave);
             consulta.setString(2, username);
             consulta.setInt(3, idRol);
             return consulta.executeUpdate() == 1;

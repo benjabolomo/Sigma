@@ -52,7 +52,7 @@ public final class UsuarioServicio {
             throw traducirError(e);
         }
         if (credenciales == null || !credenciales.getUsuario().isActivo()
-                || !ClaveUsuario.verificar(clave, credenciales.getHash())) {
+                || !new String(clave).equals(credenciales.getClave())) {
             throw credencialesInvalidas();
         }
         return new Sesion(credenciales.getUsuario());
@@ -95,9 +95,9 @@ public final class UsuarioServicio {
 
     void restablecerAdministrador(String username, char[] clave) throws UsuarioException {
         String identificador = validarTexto(username, "Usuario", MAX_USERNAME);
-        String hash = protegerClaveNueva(clave);
+        String claveValidada = validarClaveNueva(clave);
         gestionarCuentas((conexion, idRolAdmin) -> {
-            if (!dao.restablecerAdministrador(conexion, identificador, idRolAdmin, hash)) {
+            if (!dao.restablecerAdministrador(conexion, identificador, idRolAdmin, claveValidada)) {
                 throw new UsuarioException(USUARIO_NO_ENCONTRADO, "No existe un administrador activo con ese usuario.");
             }
             return null;
@@ -115,7 +115,7 @@ public final class UsuarioServicio {
         if (rol == null) {
             throw new UsuarioException(DATOS_INVALIDOS, "Seleccioná un rol.");
         }
-        return dao.insertar(conexion, nombreValidado, contactoValidado, identificador, protegerClaveNueva(clave), rol);
+        return dao.insertar(conexion, nombreValidado, contactoValidado, identificador, validarClaveNueva(clave), rol);
     }
 
     public boolean tienePermiso(Sesion sesion, Permiso permiso) throws UsuarioException {
@@ -183,13 +183,13 @@ public final class UsuarioServicio {
         return texto.codePointCount(0, texto.length()) > maximo;
     }
 
-    private static String protegerClaveNueva(char[] clave) throws UsuarioException {
+    private static String validarClaveNueva(char[] clave) throws UsuarioException {
         int longitud = clave == null || clave.length > MAX_CLAVE * 2
                 ? 0 : Character.codePointCount(clave, 0, clave.length);
         if (longitud < MIN_CLAVE || longitud > MAX_CLAVE) {
             throw new UsuarioException(DATOS_INVALIDOS, "La contraseña debe tener entre 8 y 128 caracteres.");
         }
-        return ClaveUsuario.proteger(clave);
+        return new String(clave);
     }
 
     private static UsuarioException credencialesInvalidas() {
