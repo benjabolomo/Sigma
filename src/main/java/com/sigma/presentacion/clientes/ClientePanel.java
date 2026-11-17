@@ -53,9 +53,9 @@ public class ClientePanel extends JPanel {
 
         // --- BOTONES DE ACCIÓN ---
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        JButton btnGuardar = new JButton("Guardar (Alta)");
+        JButton btnGuardar = new JButton("Guardar");
         JButton btnModificar = new JButton("Modificar");
-        JButton btnBaja = new JButton("Baja Lógica");
+        JButton btnBaja = new JButton("Dar de baja");
         JButton btnLimpiar = new JButton("Limpiar");
 
         panelBotones.add(btnGuardar);

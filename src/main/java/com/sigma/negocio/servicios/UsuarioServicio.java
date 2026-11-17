@@ -12,7 +12,7 @@ import java.util.List;
 
 public final class UsuarioServicio {
     private static final int MAX_USERNAME = 50;
-    private static final int MIN_CLAVE = 15;
+    private static final int MIN_CLAVE = 8;
     private static final int MAX_CLAVE = 128;
     private final UsuarioDAO dao = new UsuarioDAO();
     private final ProveedorConexion proveedorConexion;
@@ -187,7 +187,7 @@ public final class UsuarioServicio {
         int longitud = clave == null || clave.length > MAX_CLAVE * 2
                 ? 0 : Character.codePointCount(clave, 0, clave.length);
         if (longitud < MIN_CLAVE || longitud > MAX_CLAVE) {
-            throw new UsuarioException(DATOS_INVALIDOS, "La contraseña debe tener entre 15 y 128 caracteres.");
+            throw new UsuarioException(DATOS_INVALIDOS, "La contraseña debe tener entre 8 y 128 caracteres.");
         }
         return ClaveUsuario.proteger(clave);
     }
