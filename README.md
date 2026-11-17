@@ -69,6 +69,21 @@ El proyecto incluye una configuración de Docker Compose para desplegar el servi
    ```
    El contenedor creará la base de datos `sigma_db` e importará automáticamente el esquema inicial desde `./db/init.sql`.
 
+#### Reiniciar y reconstruir la base de datos desde cero
+
+Si ya tenías un contenedor levantado con una versión anterior de la base de datos y necesitás aplicar el nuevo `./db/init.sql` limpio:
+
+1. Detener el contenedor y **eliminar el volumen de datos persistentes** (`-v`):
+   ```bash
+   docker compose down -v
+   ```
+2. Volver a levantar el contenedor para que Docker ejecute nuevamente `./db/init.sql`:
+   ```bash
+   docker compose up -d
+   ```
+
+*(Nota: Si solo querés detener o reiniciar el contenedor conservando los datos cargados, usá `docker compose stop` / `docker compose start` o `docker compose restart`, sin la bandera `-v`).*
+
 #### Datos de Conexión
 
 * **Host:** `localhost`
