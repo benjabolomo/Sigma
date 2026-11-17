@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.sigma.datos.dao;
 
 import com.sigma.datos.conexion.Conexion;
@@ -13,19 +9,18 @@ import java.util.List;
 
 public class ClienteDAO {
 
-    // 1. Insertar un nuevo cliente
     public boolean insertar(Cliente cliente) {
-        String sql = "INSERT INTO clientes (nombre, apellido, dni, telefono, email, activo) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO cliente (nombre, contacto, activo) VALUES (?, ?, ?)";
         try (Connection conn = Conexion.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, cliente.getNombre());
-            pstmt.setString(2, cliente.getApellido());
-            pstmt.setString(3, cliente.getDni());
-            pstmt.setString(4, cliente.getTelefono());
-            pstmt.setString(5, cliente.getEmail());
-            pstmt.setBoolean(6, cliente.isActivo());
-            
+
+            String nombreCompleto = (cliente.getNombre() + " " + (cliente.getApellido() != null ? cliente.getApellido() : "")).trim();
+            String contacto = construirContacto(cliente);
+
+            pstmt.setString(1, nombreCompleto);
+            pstmt.setString(2, contacto);
+            pstmt.setBoolean(3, cliente.isActivo());
+
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -34,18 +29,18 @@ public class ClienteDAO {
         }
     }
 
-    // 2. Modificar cliente existente
     public boolean actualizar(Cliente cliente) {
-        String sql = "UPDATE clientes SET nombre = ?, apellido = ?, telefono = ?, email = ? WHERE id = ?";
+        String sql = "UPDATE cliente SET nombre = ?, contacto = ? WHERE id_cliente = ?";
         try (Connection conn = Conexion.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, cliente.getNombre());
-            pstmt.setString(2, cliente.getApellido());
-            pstmt.setString(3, cliente.getTelefono());
-            pstmt.setString(4, cliente.getEmail());
-            pstmt.setInt(5, cliente.getId());
-            
+
+            String nombreCompleto = (cliente.getNombre() + " " + (cliente.getApellido() != null ? cliente.getApellido() : "")).trim();
+            String contacto = construirContacto(cliente);
+
+            pstmt.setString(1, nombreCompleto);
+            pstmt.setString(2, contacto);
+            pstmt.setInt(3, cliente.getId());
+
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -54,12 +49,11 @@ public class ClienteDAO {
         }
     }
 
-    // 3. Baja lógica (cambiar activo a false en vez de borrar el registro)
     public boolean bajaLogica(int id) {
-        String sql = "UPDATE clientes SET activo = false WHERE id = ?";
+        String sql = "UPDATE cliente SET activo = false WHERE id_cliente = ?";
         try (Connection conn = Conexion.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
             pstmt.setInt(1, id);
             pstmt.executeUpdate();
             return true;
@@ -69,25 +63,15 @@ public class ClienteDAO {
         }
     }
 
-    // 4. Listar todos los clientes activos
     public List<Cliente> listar() {
         List<Cliente> clientes = new ArrayList<>();
-        String sql = "SELECT * FROM clientes WHERE activo = true";
+        String sql = "SELECT id_cliente, nombre, contacto, activo FROM cliente WHERE activo = true ORDER BY nombre";
         try (Connection conn = Conexion.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            
+
             while (rs.next()) {
-                Cliente c = new Cliente(
-                    rs.getInt("id"),
-                    rs.getString("nombre"),
-                    rs.getString("apellido"),
-                    rs.getString("dni"),
-                    rs.getString("telefono"),
-                    rs.getString("email"),
-                    rs.getBoolean("activo")
-                );
-                clientes.add(c);
+                clientes.add(mapearCliente(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -96,6 +80,62 @@ public class ClienteDAO {
     }
 
     public Cliente buscarPorDni(String dni) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        if (dni == null || dni.isBlank()) {
+            return null;
+        }
+        String sql = "SELECT id_cliente, nombre, contacto, activo FROM cliente WHERE activo = true AND contacto LIKE ?";
+        try (Connection conn = Conexion.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, "%DNI:" + dni.trim() + "%");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapearCliente(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String construirContacto(Cliente c) {
+        List<String> partes = new ArrayList<>();
+        if (c.getDni() != null && !c.getDni().isBlank()) partes.add("DNI:" + c.getDni().trim());
+        if (c.getTelefono() != null && !c.getTelefono().isBlank()) partes.add(c.getTelefono().trim());
+        if (c.getEmail() != null && !c.getEmail().isBlank()) partes.add(c.getEmail().trim());
+        return String.join(" | ", partes);
+    }
+
+    private Cliente mapearCliente(ResultSet rs) throws SQLException {
+        int id = rs.getInt("id_cliente");
+        String nombreCompleto = rs.getString("nombre");
+        String contacto = rs.getString("contacto");
+        boolean activo = rs.getBoolean("activo");
+
+        String nombre = nombreCompleto;
+        String apellido = "";
+        int espacio = nombreCompleto != null ? nombreCompleto.indexOf(' ') : -1;
+        if (espacio > 0) {
+            nombre = nombreCompleto.substring(0, espacio);
+            apellido = nombreCompleto.substring(espacio + 1);
+        }
+
+        String dni = "";
+        String telefono = "";
+        String email = "";
+        if (contacto != null && !contacto.isBlank()) {
+            for (String parte : contacto.split("\\|")) {
+                String p = parte.trim();
+                if (p.startsWith("DNI:")) {
+                    dni = p.substring(4).trim();
+                } else if (p.contains("@")) {
+                    email = p;
+                } else {
+                    telefono = p;
+                }
+            }
+        }
+        return new Cliente(id, nombre, apellido, dni, telefono, email, activo);
     }
 }
