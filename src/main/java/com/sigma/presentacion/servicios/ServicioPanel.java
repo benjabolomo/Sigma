@@ -173,7 +173,7 @@ public class ServicioPanel extends JPanel {
         JButton btnCambiarEstado = new JButton("Cambiar Estado...");
         btnCambiarEstado.addActionListener(e -> cambiarEstadoSeleccionado());
 
-        JButton btnRefrescar = new JButton("Refrescar");
+        JButton btnRefrescar = new JButton("Actualizar");
         btnRefrescar.addActionListener(e -> refrescarVista());
 
         pnlAcciones.add(btnNuevaOrden);

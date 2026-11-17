@@ -111,7 +111,7 @@ public class LoginDialog extends JDialog {
         pnl.add(txtNombre);
         pnl.add(new JLabel("Nombre de usuario:"));
         pnl.add(txtUser);
-        pnl.add(new JLabel("Contraseña (mín. 15 caracteres):"));
+        pnl.add(new JLabel("Contraseña:"));
         pnl.add(txtPass);
         pnl.add(new JLabel("Repetir contraseña:"));
         pnl.add(txtPass2);

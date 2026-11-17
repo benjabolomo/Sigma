@@ -187,7 +187,7 @@ public final class UsuarioServicio {
         int longitud = clave == null || clave.length > MAX_CLAVE * 2
                 ? 0 : Character.codePointCount(clave, 0, clave.length);
         if (longitud < MIN_CLAVE || longitud > MAX_CLAVE) {
-            throw new UsuarioException(DATOS_INVALIDOS, "La contraseña debe tener mas de 8 caracteres.");
+            throw new UsuarioException(DATOS_INVALIDOS, "La contraseña debe tener entre 8 y 128 caracteres.");
         }
         return new String(clave);
     }
